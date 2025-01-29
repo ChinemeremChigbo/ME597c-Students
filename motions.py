@@ -4,16 +4,15 @@ import rclpy
 from rclpy.node import Node
 
 from utilities import Logger, euler_from_quaternion
-from rclpy.qos import QoSProfile
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 
 # TODO Part 3: Import message types needed: 
     # For sending velocity commands to the robot: Twist
     # For the sensors: Imu, LaserScan, and Odometry
 # Check the online documentation to fill in the lines below
-from ... import Twist
-from sensor_msgs.msg import Imu
-from ... import LaserScan
-from ... import Odometry
+from geometry_msgs.msg import Twist
+from sensor_msgs.msg import Imu, LaserScan
+from nav_msgs.msg import Odometry
 
 from rclpy.time import Time
 
@@ -40,7 +39,7 @@ class motion_executioner(Node):
         self.laser_initialized=False
         
         # TODO Part 3: Create a publisher to send velocity commands by setting the proper parameters in (...)
-        self.vel_publisher=self.create_publisher(...)
+        self.vel_publisher = self.create_publisher(Twist, "/cmd_vel", 10)
                 
         # loggers
         self.imu_logger=Logger('imu_content_'+str(motion_types[motion_type])+'.csv', headers=["acc_x", "acc_y", "angular_z", "stamp"])
@@ -48,21 +47,24 @@ class motion_executioner(Node):
         self.laser_logger=Logger('laser_content_'+str(motion_types[motion_type])+'.csv', headers=["ranges", "angle_increment", "stamp"])
         
         # TODO Part 3: Create the QoS profile by setting the proper parameters in (...)
-        qos=QoSProfile(...)
-
+        qos = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=10
+        )
         # TODO Part 5: Create below the subscription to the topics corresponding to the respective sensors
         # IMU subscription
+        self.imu_subscriber = self.create_subscription(
+            Imu, "/imu", self.imu_callback, qos)
         
-        ...
+        # Odom subscription
+        self.odom_subscriber = self.create_subscription(
+            Odometry, "/odom", self.odom_callback, qos)
         
-        # ENCODER subscription
-
-        ...
-        
-        # LaserScan subscription 
-        
-        ...
-        
+        # LaserScan subscription
+        self.laser_subscriber = self.create_subscription(
+            LaserScan, "/scan", self.laser_callback, qos)
+                
         self.create_timer(0.1, self.timer_callback)
 
 
@@ -73,15 +75,49 @@ class motion_executioner(Node):
     # You can save the needed fields into a list, and pass the list to the log_values function in utilities.py
 
     def imu_callback(self, imu_msg: Imu):
-        ...    # log imu msgs
+        """ Log imu messages"""
+        timestamp = Time.from_msg(imu_msg.header.stamp).nanoseconds
+        imu_data = [
+            imu_msg.linear_acceleration.x,
+            imu_msg.linear_acceleration.y,
+            imu_msg.angular_velocity.z,
+            timestamp
+        ]
+        self.imu_logger.log_values(imu_data)
+        self.imu_initialized = True
         
     def odom_callback(self, odom_msg: Odometry):
+        """Logs odometry messages."""
+        timestamp = Time.from_msg(odom_msg.header.stamp).nanoseconds
+        position = odom_msg.pose.pose.position
+        orientation = odom_msg.pose.pose.orientation
         
-        ... # log odom msgs
+        # Convert quaternion to Euler angles
+        _, _, theta = euler_from_quaternion([
+            orientation.x,
+            orientation.y,
+            orientation.z,
+            orientation.w
+        ])
+        
+        odom_data = [
+            position.x,
+            position.y,
+            theta,
+            timestamp
+        ]
+        self.odom_logger.log_values(odom_data)
+        self.odom_initialized = True
                 
     def laser_callback(self, laser_msg: LaserScan):
-        
-        ... # log laser msgs with position msg at that time
+        timestamp = Time.from_msg(laser_msg.header.stamp).nanoseconds
+        laser_data = [
+            list(laser_msg.ranges),
+            laser_msg.angle_increment,
+            timestamp
+        ]
+        self.laser_logger.log_values(laser_data)
+        self.laser_initialized = True
                 
     def timer_callback(self):
         
@@ -112,20 +148,26 @@ class motion_executioner(Node):
     # TODO Part 4: Motion functions: complete the functions to generate the proper messages corresponding to the desired motions of the robot
 
     def make_circular_twist(self):
-        
-        msg=Twist()
-        ... # fill up the twist msg for circular motion
+        """Generates a Twist message for circular motion."""
+        msg = Twist()
+        msg.linear.x = 0.5  # Constant forward velocity
+        msg.angular.z = 0.5  # Constant angular velocity for circular motion
         return msg
 
     def make_spiral_twist(self):
-        msg=Twist()
-        ... # fill up the twist msg for spiral motion
+        """Generates a Twist message for spiral motion."""
+        msg = Twist()
+        self.radius_ += 0.01  # Gradually increase radius
+        msg.linear.x = self.radius_  # Linear velocity increases over time
+        msg.angular.z = 0.5  # Constant angular velocity
         return msg
-    
+
     def make_acc_line_twist(self):
-        msg=Twist()
-        ... # fill up the twist msg for line motion
+        """Generates a Twist message for accelerated linear motion."""
+        msg = Twist()
+        msg.linear.x += 0.05  # Gradually increase forward velocity
         return msg
+
 
 import argparse
 
