@@ -85,7 +85,7 @@ def euler_from_quaternion(quat):
     # Compute yaw (rotation around Z-axis)
     sin_yaw = 2.0 * (w * z + x * y)
     cos_yaw = 1.0 - 2.0 * (y * y + z * z)
-    yaw = math.atan2(sin_yaw, cos_yaw)
+    yaw = atan2(sin_yaw, cos_yaw)
 
     return yaw
 

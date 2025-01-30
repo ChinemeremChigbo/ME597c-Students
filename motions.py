@@ -93,7 +93,7 @@ class motion_executioner(Node):
         orientation = odom_msg.pose.pose.orientation
         
         # Convert quaternion to Euler angles
-        _, _, theta = euler_from_quaternion([
+        theta = euler_from_quaternion([
             orientation.x,
             orientation.y,
             orientation.z,
@@ -148,24 +148,24 @@ class motion_executioner(Node):
     # TODO Part 4: Motion functions: complete the functions to generate the proper messages corresponding to the desired motions of the robot
 
     def make_circular_twist(self):
-        """Generates a Twist message for circular motion."""
+        """Generates a Twist message for circular motion with reduced speed."""
         msg = Twist()
-        msg.linear.x = 0.5  # Constant forward velocity
-        msg.angular.z = 0.5  # Constant angular velocity for circular motion
+        msg.linear.x = 0.3
+        msg.angular.z = 0.3
         return msg
 
     def make_spiral_twist(self):
-        """Generates a Twist message for spiral motion."""
+        """Generates a Twist message for spiral motion with controlled speed increase."""
         msg = Twist()
-        self.radius_ += 0.01  # Gradually increase radius
-        msg.linear.x = self.radius_  # Linear velocity increases over time
-        msg.angular.z = 0.5  # Constant angular velocity
+        self.radius_ += 0.005
+        msg.linear.x = max(0.2, self.radius_)
+        msg.angular.z = 0.3
         return msg
 
     def make_acc_line_twist(self):
         """Generates a Twist message for accelerated linear motion."""
         msg = Twist()
-        msg.linear.x += 0.05  # Gradually increase forward velocity
+        msg.linear.x += min(msg.linear.x + 0.02, 0.6)
         return msg
 
 
