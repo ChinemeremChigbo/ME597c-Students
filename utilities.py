@@ -65,6 +65,7 @@ class FileReader:
                 row=[]                
                 
                 for val in values:
+                    val = val.replace("]", "").replace("[", "")
                     if val=='':
                         break
                     row.append(float(val.strip()))
