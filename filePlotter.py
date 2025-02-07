@@ -37,14 +37,14 @@ def plot_sensor_data(filename):
             markersize=4,  # Reduce marker size
         )
 
-    # Extract motion type from filename
-    motion_type = filename.split("_")[-1].split(".")[
-        0
-    ]
+    motion_type = filename.split("_")[-1].split(".")[0]
+    sensor_type = filename.split("_")[0]
 
     plt.xlabel("Time (nanoseconds)")
     plt.ylabel("Sensor Values")
-    plt.title(f"Sensor Data Plot - {motion_type.capitalize()} Motion")
+    plt.title(
+        f"{sensor_type.capitalize()} Data Plot - {motion_type.capitalize()} Motion"
+    )
     plt.legend()
     plt.grid(True, linestyle="--", alpha=0.6)
 
