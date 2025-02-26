@@ -24,12 +24,12 @@ from controller import controller, trajectoryController
 
 class decision_maker(Node):
     
-    def __init__(self, publisher_msg, publishing_topic, qos_publisher, goalPoint, rate=10, motion_type=POINT_PLANNER):
+    def __init__(self, publisher_msg, publishing_topic, qos_publisher, goalPoint, rate=10, motion_type=POINT_PLANNER, trajectory_type="parabola"):
 
         super().__init__("decision_maker")
 
         #TODO Part 4: Create a publisher for the topic responsible for robot's motion
-        self.publisher=... 
+        self.publisher = self.create_publisher(Twist, publishing_topic, qos_publisher)
 
         publishing_period=1/rate
         
@@ -43,7 +43,7 @@ class decision_maker(Node):
     
         elif motion_type==TRAJECTORY_PLANNER:
             self.controller=trajectoryController(klp=0.2, klv=0.5, kap=0.8, kav=0.6)
-            self.planner=planner(TRAJECTORY_PLANNER)
+            self.planner = planner(TRAJECTORY_PLANNER, trajectory_type)
 
         else:
             print("Error! you don't have this planner", file=sys.stderr)
@@ -68,29 +68,40 @@ class decision_maker(Node):
             print("waiting for odom msgs ....")
             return
 
-        vel_msg=Twist()
-        
+        # Compute distance to goal
+        goal_threshold = 0.05
+        current_pose = self.localizer.getPose()
+
         # TODO Part 3: Check if you reached the goal
-        if type(self.goal) == list:
-            reached_goal=...
-        else: 
-            reached_goal=...
-        
+        if isinstance(self.goal, list):  
+            distance = sqrt((current_pose[0] - self.goal[0])**2 + (current_pose[1] - self.goal[1])**2)
+            reached_goal = distance < goal_threshold
+        else:
+            reached_goal = False 
 
         if reached_goal:
             print("reached goal")
-            self.publisher.publish(vel_msg)
+
+            vel_msg = Twist()
+            self.publisher.publish(vel_msg) 
             
             self.controller.PID_angular.logger.save_log()
             self.controller.PID_linear.logger.save_log()
             
             #TODO Part 3: exit the spin
-            ... 
+            self.destroy_node()
+            return
         
         velocity, yaw_rate = self.controller.vel_request(self.localizer.getPose(), self.goal, True)
 
         #TODO Part 4: Publish the velocity to move the robot
-        ... 
+        velocity, yaw_rate = self.controller.vel_request(self.localizer.getPose(), self.goal, True)
+
+        vel_msg = Twist()
+        vel_msg.linear.x = velocity
+        vel_msg.angular.z = yaw_rate
+
+        self.publisher.publish(vel_msg)
 
 import argparse
 
@@ -102,23 +113,25 @@ def main(args=None):
     # TODO Part 3: You migh need to change the QoS profile based on whether you're using the real robot or in simulation.
     # Remember to define your QoS profile based on the information available in "ros2 topic info /odom --verbose" as explained in Tutorial 3
     
-    odom_qos=QoSProfile(reliability=2, durability=2, history=1, depth=10)
-    
+    odom_qos = QoSProfile(
+        depth=10,
+        reliability=ReliabilityPolicy.RELIABLE,
+        durability=DurabilityPolicy.VOLATILE
+    )    
 
     # TODO Part 4: instantiate the decision_maker with the proper parameters for moving the robot
     if args.motion.lower() == "point":
-        DM=decision_maker(...)
+        DM = decision_maker(goal=[1.0, 1.0])
     elif args.motion.lower() == "trajectory":
-        DM=decision_maker(...)
+        DM = decision_maker(goal=[[1.0, 1.0], [2.0, 2.0]])
     else:
-        print("invalid motion type", file=sys.stderr)        
-    
-    
-    
+        print("invalid motion type", file=sys.stderr)
+        sys.exit(1)
+
     try:
         spin(DM)
     except SystemExit:
-        print(f"reached there successfully {DM.localizer.pose}")
+        print(f"reached there successfully {DM.localizer.getPose()}")
 
 
 if __name__=="__main__":
