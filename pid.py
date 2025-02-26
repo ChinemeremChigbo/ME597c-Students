@@ -38,7 +38,7 @@ class PID_ctrl:
     def __update(self, stamped_error):
         
         latest_error=stamped_error[0]
-        stamp=stamped_error[1]
+        stamp = Time.from_msg(stamped_error[1])
         
         self.history.append(stamped_error)        
         

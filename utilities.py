@@ -121,7 +121,7 @@ def calculate_angular_error(current_pose, goal_pose):
     error_angular = theta_desired - theta_curr
 
     # Normalize the angular error to be within [-π, π]
-    error_angular = (error_angular + pi) % (2 * pi) - pi
+    error_angular = (error_angular + M_PI) % (2 * M_PI) - M_PI
 
     return error_angular
 
