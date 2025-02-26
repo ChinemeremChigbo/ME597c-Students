@@ -48,7 +48,6 @@ class localization(Node):
 
         # Save pose
         self.pose = [x, y, theta, timestamp]
-        print(f"Updated Pose: {self.pose}")
 
         # Log the data
         self.loc_logger.log_values([x, y, theta, Time.from_msg(timestamp).nanoseconds])

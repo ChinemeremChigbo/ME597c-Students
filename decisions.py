@@ -53,6 +53,7 @@ class decision_maker(Node):
         # Instantiate the planner
         # NOTE: goalPoint is used only for the pointPlanner
         self.goal=self.planner.plan(goalPoint)
+        self.current_goal_index = 0 if motion_type == TRAJECTORY_PLANNER else None
 
         self.create_timer(publishing_period, self.timerCallback)
 
@@ -70,20 +71,28 @@ class decision_maker(Node):
         vel_msg=Twist()
         
         # TODO Part 3: Check if you reached the goal
-        if type(self.goal) == list:
-            reached_goal = calculate_linear_error(self.localizer.getPose(), self.goal) < 0.05
-        else: 
-            reached_goal = False         
+        if self.current_goal_index is not None:
+            # We are in trajectory planner mode (goal is a sequence of points)
+            current_goal = self.goal[self.current_goal_index]
 
+            # Check if the current goal is reached
+            reached_goal = calculate_linear_error(self.localizer.getPose(), current_goal) < 0.05
+        else:
+            # Point planner mode
+            reached_goal = calculate_linear_error(self.localizer.getPose(), self.goal) < 0.05
+        print(self.goal)
         if reached_goal:
-            print("reached goal")
-            self.publisher.publish(vel_msg)
-            
-            self.controller.PID_angular.logger.save_log()
-            self.controller.PID_linear.logger.save_log()
-            
-            #TODO Part 3: exit the spin
-            sys.exit(0)
+            print(f"Reached goal: {current_goal}" if self.current_goal_index is not None else "Reached point goal")
+            # If in trajectory planner mode, move to the next goal if any
+            if self.current_goal_index is not None and self.current_goal_index < len(self.goal) - 1:
+                self.current_goal_index += 1
+                
+                print(f"Moving to next goal: {self.goal[self.current_goal_index]}, {self.current_goal_index + 1}/{len(self.goal)}")
+            else:
+                self.publisher.publish(vel_msg)  # Stop the robot after reaching the final goal
+                self.controller.PID_angular.logger.save_log()
+                self.controller.PID_linear.logger.save_log()
+                sys.exit(0)
 
         
         velocity, yaw_rate = self.controller.vel_request(self.localizer.getPose(), self.goal, True)
