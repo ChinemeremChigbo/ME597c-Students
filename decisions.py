@@ -18,6 +18,8 @@ from localization import localization, rawSensor
 from planner import TRAJECTORY_PLANNER, POINT_PLANNER, planner
 from controller import controller, trajectoryController
 
+from math import sqrt
+
 # You may add any other imports you may need/want to use below
 # import ...
 
@@ -63,6 +65,7 @@ class decision_maker(Node):
         
         # TODO Part 3: Run the localization node
         ...    # Remember that this file is already running the decision_maker node.
+        spin_once(self.localizer)
 
         if self.localizer.getPose() is None:
             print("waiting for odom msgs ....")
@@ -90,6 +93,7 @@ class decision_maker(Node):
             
             #TODO Part 3: exit the spin
             self.destroy_node()
+            sys.exit(0)
             return
         
         velocity, yaw_rate = self.controller.vel_request(self.localizer.getPose(), self.goal, True)
@@ -121,7 +125,7 @@ def main(args=None):
 
     # TODO Part 4: instantiate the decision_maker with the proper parameters for moving the robot
     if args.motion.lower() == "point":
-        DM = decision_maker(publisher_msg=None, publishing_topic="/cmd_vel", qos_publisher=odom_qos, goalPoint=[2.0, 0])
+        DM = decision_maker(publisher_msg=None, publishing_topic="/cmd_vel", qos_publisher=odom_qos, goalPoint=[1.0, 1.0])
     elif args.motion.lower() == "trajectory":
         DM = decision_maker(publisher_msg=None, publishing_topic="/cmd_vel", qos_publisher=odom_qos, goalPoint=[[1.0, 1.0], [2.0, 2.0]])
     else:
