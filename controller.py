@@ -59,7 +59,9 @@ class trajectoryController(controller):
         angular_vel=self.PID_angular.update([e_ang, pose[3]], status) 
 
         # TODO Part 5: Add saturation limits for the robot linear and angular velocity
-
+        max_linear_vel=1.0  # Maximum speed in m/s
+        max_angular_vel=1.0  # Maximum rotation in rad/s
+        
         linear_vel = np.clip(linear_vel, -max_linear_vel, max_linear_vel)
         angular_vel = np.clip(angular_vel, -max_angular_vel, max_angular_vel)
         

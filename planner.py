@@ -1,3 +1,5 @@
+import numpy as np
+
 # Type of planner
 POINT_PLANNER=0; TRAJECTORY_PLANNER=1
 
