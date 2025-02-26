@@ -2,6 +2,7 @@
 
 
 import sys
+import os
 
 from utilities import euler_from_quaternion, calculate_angular_error, calculate_linear_error
 from pid import PID_ctrl
@@ -24,7 +25,7 @@ from controller import controller, trajectoryController
 
 class decision_maker(Node):
     
-    def __init__(self, publisher_msg, publishing_topic, qos_publisher, goalPoint, rate=10, motion_type=POINT_PLANNER):
+    def __init__(self, publisher_msg, publishing_topic, qos_publisher, goalPoint, rate=10, motion_type=POINT_PLANNER, trajectory_type="parabola"):
 
         super().__init__("decision_maker")
 
@@ -42,7 +43,10 @@ class decision_maker(Node):
     
         elif motion_type == TRAJECTORY_PLANNER:
             self.controller = trajectoryController(klp=0.3, klv=0.6, kap=1.0, kav=0.8)
-            self.planner = planner(TRAJECTORY_PLANNER)
+            if  trajectory_type == "parabola":
+                trajectory = 0
+            else: trajectory = 1
+            self.planner = planner(TRAJECTORY_PLANNER,trajectory)
         else:
             print("Error! you don't have this planner", file=sys.stderr)
 
@@ -52,52 +56,48 @@ class decision_maker(Node):
 
         # Instantiate the planner
         # NOTE: goalPoint is used only for the pointPlanner
-        self.goal=self.planner.plan(goalPoint)
-        self.current_goal_index = 0 if motion_type == TRAJECTORY_PLANNER else None
+        self.goal = self.planner.plan(goalPoint)
 
         self.create_timer(publishing_period, self.timerCallback)
 
-
     def timerCallback(self):
-        
         # TODO Part 3: Run the localization node
-        ...    # Remember that this file is already running the decision_maker node.
+        # Remember that this file is already running the decision_maker node.
+
+        # Run the localization node.
         spin_once(self.localizer)
 
         if self.localizer.getPose()  is  None:
             print("waiting for odom msgs ....")
             return
 
-        vel_msg=Twist()
-        
+        vel_msg = Twist()
+
         # TODO Part 3: Check if you reached the goal
-        if self.current_goal_index is not None:
-            # We are in trajectory planner mode (goal is a sequence of points)
-            current_goal = self.goal[self.current_goal_index]
-
-            # Check if the current goal is reached
-            reached_goal = calculate_linear_error(self.localizer.getPose(), current_goal) < 0.05
+        if type(self.goal) == list:
+            # Check if the last point in the trajectory has been reached with a chosen tolerance.
+            goal = self.goal[-1]
         else:
-            # Point planner mode
-            reached_goal = calculate_linear_error(self.localizer.getPose(), self.goal) < 0.05
-        print(self.goal)
+            goal = self.goal
+        lin_err = calculate_linear_error(self.localizer.getPose(), goal)
+        reached_goal = lin_err < 0.05
+
         if reached_goal:
-            print(f"Reached goal: {current_goal}" if self.current_goal_index is not None else "Reached point goal")
-            # If in trajectory planner mode, move to the next goal if any
-            if self.current_goal_index is not None and self.current_goal_index < len(self.goal) - 1:
-                self.current_goal_index += 1
-                
-                print(f"Moving to next goal: {self.goal[self.current_goal_index]}, {self.current_goal_index + 1}/{len(self.goal)}")
-            else:
-                self.publisher.publish(vel_msg)  # Stop the robot after reaching the final goal
-                self.controller.PID_angular.logger.save_log()
-                self.controller.PID_linear.logger.save_log()
-                sys.exit(0)
+            print("reached goal")
+            self.publisher.publish(vel_msg)
 
-        
-        velocity, yaw_rate = self.controller.vel_request(self.localizer.getPose(), self.goal, True)
+            self.controller.PID_angular.logger.save_log()
+            self.controller.PID_linear.logger.save_log()
 
-        #TODO Part 4: Publish the velocity to move the robot
+            # TODO Part 3: exit the spin
+            sys.exit()
+
+        velocity, yaw_rate = self.controller.vel_request(
+            self.localizer.getPose(), self.goal, True
+        )
+
+        # TODO Part 4: Publish the velocity to move the robot
+        # Publish the velocity command.
         vel_msg.linear.x = velocity
         vel_msg.angular.z = yaw_rate
         self.publisher.publish(vel_msg)
@@ -124,7 +124,7 @@ def main(args=None):
     if args.motion.lower() == "point":
         DM = decision_maker(publisher_msg=Twist(), publishing_topic="/cmd_vel", qos_publisher=odom_qos, goalPoint=[1.0, 1.0], motion_type=POINT_PLANNER)
     elif args.motion.lower() == "trajectory":
-        DM = decision_maker(publisher_msg=Twist(), publishing_topic="/cmd_vel", qos_publisher=odom_qos, goalPoint=None, motion_type=TRAJECTORY_PLANNER)
+        DM = decision_maker(publisher_msg=None, publishing_topic="/cmd_vel", qos_publisher=odom_qos, goalPoint=None, motion_type=TRAJECTORY_PLANNER, trajectory_type=args.trajectory_type)
 
     else:
         print("invalid motion type", file=sys.stderr)     
@@ -139,6 +139,7 @@ if __name__=="__main__":
 
     argParser=argparse.ArgumentParser(description="point or trajectory") 
     argParser.add_argument("--motion", type=str, default="point")
+    argParser.add_argument("--trajectory_type", type=str, default="parabola", help="Type of trajectory (default: 'parabola')")
     args = argParser.parse_args()
 
     main(args)

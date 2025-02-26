@@ -1,5 +1,5 @@
 import numpy as np
-
+import os
 
 from pid import PID_ctrl
 from utilities import euler_from_quaternion, calculate_angular_error, calculate_linear_error
@@ -30,8 +30,14 @@ class controller:
         
         # TODO Part 4: Add saturation limits for the robot linear and angular velocity
 
-        linear_vel = 1.0 if linear_vel > 1.0 else linear_vel
-        angular_vel = 1.0 if angular_vel > 1.0 else angular_vel
+        linear_vel_max = 0.31
+        angular_vel_max = 1.90
+        if "TURTLEBOT3_MODEL" in os.environ:
+            linear_vel_max = 0.22
+            angular_vel_max = 2.84
+        linear_vel = min(linear_vel, linear_vel_max)
+        angular_vel = min(angular_vel, angular_vel_max)
+        
         
         return linear_vel, angular_vel
     
@@ -57,8 +63,13 @@ class trajectoryController(controller):
 
         # TODO Part 5: Add saturation limits for the robot linear and angular velocity
 
-        linear_vel = 1.0 if linear_vel > 1.0 else linear_vel
-        angular_vel = 1.0 if angular_vel > 1.0 else angular_vel
+        linear_vel_max = 0.31
+        angular_vel_max = 1.90
+        if "TURTLEBOT3_MODEL" in os.environ:
+            linear_vel_max = 0.22
+            angular_vel_max = 2.84
+        linear_vel = min(linear_vel, linear_vel_max)
+        angular_vel = min(angular_vel, angular_vel_max)
         
         return linear_vel, angular_vel
 

@@ -10,7 +10,7 @@ class planner:
     def __init__(self, type_, trajectory_type=PARABOLA_TRAJECTORY):
         self.type = type_
         self.trajectory_type = trajectory_type
-
+        print(trajectory_type)
     def plan(self, goalPoint=[-1.0, -1.0]):
         
         if self.type==POINT_PLANNER:
