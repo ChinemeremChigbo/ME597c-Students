@@ -21,11 +21,17 @@ class planner:
     def point_planner(self, goalPoint):
         x = goalPoint[0]
         y = goalPoint[1]
-        return x, y
+        return [x, y]
 
     # TODO Part 6: Implement the trajectories here
     def trajectory_planner(self):
-        pass
-        # the return should be a list of trajectory points: [ [x1,y1], ..., [xn,yn]]
-        # return 
+        x_parabola = np.linspace(0.0, 1.5, num=50)
+        y_parabola = x_parabola ** 2
+        parabola_trajectory = np.column_stack((x_parabola, y_parabola))
 
+        x_sigmoid = np.linspace(0.0, 2.5, num=50) 
+        y_sigmoid = 2 / (1 + np.exp(-2 * x_sigmoid)) - 1
+        sigmoid_trajectory = np.column_stack((x_sigmoid, y_sigmoid))
+
+        # Combine both trajectories in a list and return them
+        return parabola_trajectory.tolist(), sigmoid_trajectory.tolist()
