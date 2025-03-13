@@ -169,34 +169,54 @@ class mapManipulator(Node):
 
     # TODO part 4: See through this method and explain how it works to the TA
     def make_likelihood_field(self):
+        """
+        Generates a likelihood field used for localization.
+        The likelihood field assigns probabilities to each grid cell based on its distance
+        to the nearest occupied cell, following a Gaussian distribution.
         
+        This field is used in particle filter localization to determine how well a
+        particular position aligns with sensor observations.
+        """
         image_array=self.image_array
 
         from sklearn.neighbors import KDTree
         
+        # Identify all occupied cells in the map (assumed to be those with values < 10)
         indices = np.where(image_array < 10)
         indices_arr = np.array([indices[0], indices[1]]).T
         
+        # Convert occupied cell indices to real-world coordinates
         occupied_points = self.cell_2_position(indices_arr)
+
+        # Generate a list of all possible grid cell positions
         all_indices = np.array([[i, j] for i in range(self.height) for j in range(self.width)])
         all_positions = self.cell_2_position(all_indices)
 
+        # Build a KD-Tree for fast nearest-neighbor lookups
+        # A KD-Tree is a data structure used for efficient spatial searches.
+        # It allows finding the nearest obstacle quickly for each position in the map.
         kdt=KDTree(occupied_points)
 
+        # Find the closest obstacle for each position in the grid
+        # This returns the distance to the nearest occupied cell
         dists=kdt.query(all_positions, k=1)[0][:]
+    
+        # Compute likelihood using a Gaussian distribution
+        # The Gaussian function models uncertainty: the closer a point is to an obstacle,
+        # the higher its likelihood of being occupied.
         probabilities=np.exp( -(dists**2) / (2*self.laser_sig**2))
         
+        # Reshape the likelihood field to match the grid shape
         likelihood_field=probabilities.reshape(image_array.shape)
-        
+
+        # Convert the likelihood field into an image format for visualization
+        # This scales the probability values to 255 for display purposes
         likelihood_field_img=np.array(255-255*probabilities.reshape(image_array.shape), dtype=np.int32)
         
+        # Store the computed likelihood field and visualization image
         self.likelihood_img=likelihood_field_img
-        
-        self.occ_points=np.array(occupied_points)
-        
-                
+        self.occ_points=np.array(occupied_points)                
         #self.plot_pgm_image(likelihood_field_img)
-
         self.likelihood_field = likelihood_field
         
         return likelihood_field
