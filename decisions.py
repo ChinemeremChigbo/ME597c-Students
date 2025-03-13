@@ -24,7 +24,6 @@ from geometry_msgs.msg import PoseStamped
 
 
 from nav_msgs.msg import Path
-from geometry_msgs.msg import PoseStamped
 
 import time
 
@@ -48,14 +47,14 @@ class decision_maker(Node):
         # TODO part 5: call the proper types
         self.localizer = localization(type_=particlesFilter)
         
-        if motion_type==POINT_PLANNER:
-            self.controller=controller(klp=0.05, klv=0.0, kap=0.8, kav=0.0)      
-            self.planner=planner(POINT_PLANNER)
-
+        # Select appropriate planner and controller based on motion type
+        if motion_type == POINT_PLANNER:
+            self.controller = controller(klp=0.05, klv=0.0, kap=0.8, kav=0.0)      
+            self.planner = planner(POINT_PLANNER)
         
-        elif motion_type==TRAJECTORY_PLANNER:
-            self.controller=trajectoryController(klp=0.2, klv=0.5, kap=0.8, kav=0.6)      
-            self.planner=planner(TRAJECTORY_PLANNER)
+        elif motion_type == TRAJECTORY_PLANNER:
+            self.controller = trajectoryController(klp=0.2, klv=0.5, kap=0.8, kav=0.6)      
+            self.planner = planner(TRAJECTORY_PLANNER)
         
         else:
             print("Error! you don't have this type of planner", file=sys.stderr)
@@ -75,17 +74,17 @@ class decision_maker(Node):
     def designPathFor(self, msg: PoseStamped):
         while self.localizer.pose is None:
             spin_once(self.localizer)
-            self.get_logger().info("waiting for the first pose")
+            self.get_logger().info("Waiting for the first pose")
             time.sleep(0.1)
         
-        if self.localizer.getPose() is  None:
-            print("waiting for odom msgs ....")
+        if self.localizer.getPose() is None:
+            print("Waiting for odom messages...")
             return
         
-        
-        self.goal=self.planner.plan([self.localizer.getPose()[0], self.localizer.getPose()[1]],
-                                     [msg.pose.position.x, msg.pose.position.y])
-
+        self.goal = self.planner.plan(
+            [self.localizer.getPose()[0], self.localizer.getPose()[1]],
+            [msg.pose.position.x, msg.pose.position.y]
+        )
     
     def timerCallback(self):
         
@@ -161,5 +160,4 @@ if __name__=="__main__":
     argParser=argparse.ArgumentParser(description="point or trajectory") 
     argParser.add_argument("--motion", type=str, default="point")
     args = argParser.parse_args()
-
     main(args)
