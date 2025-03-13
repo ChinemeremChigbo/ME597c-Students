@@ -57,29 +57,26 @@ class localization(Node):
 
     def odom_and_pf_pose_callback(self, odom_msg: odom, pf_msg: odom):
         # TODO: You need to use the pf_msg to update the pose of the robot [x, y, theta, stamp]
-        self.pose = [
-            pf_msg.pose.pose.position.x,
-            pf_msg.pose.pose.position.y,
-            euler_from_quaternion(pf_msg.pose.pose.orientation),
-            Time.from_msg(odom_msg.header.stamp).nanoseconds
-        ]        
+        pf_x = pf_msg.pose.pose.position.x
+        pf_y = pf_msg.pose.pose.position.y
+        pf_theta = euler_from_quaternion(pf_msg.pose.pose.orientation)
+        
+        # Update the current pose with the particle filter estimation
+        self.pose = [pf_x, pf_y, pf_theta, Time.from_msg(pf_msg.header.stamp).nanoseconds]
+        
+        # Extract odometry values
+        odom_x = odom_msg.pose.pose.position.x
+        odom_y = odom_msg.pose.pose.position.y
+        odom_theta = euler_from_quaternion(odom_msg.pose.pose.orientation)
+        odom_vx = odom_msg.twist.twist.linear.x
+        odom_yawrate = odom_msg.twist.twist.angular.z
+        
         # TODO: You need to log the values from the odom and the particle filter based on the headers
         # TODO: odom values: x, y, theta, vx, yawrate
-        odom_values_list = [
-            odom_msg.pose.pose.position.x,
-            odom_msg.pose.pose.position.y,
-            euler_from_quaternion(odom_msg.pose.pose.orientation),
-            odom_msg.twist.twist.linear.x,
-            odom_msg.twist.twist.angular.z
-        ]
-
+        odom_values_list = [odom_x, odom_y, odom_theta, odom_vx, odom_yawrate]
         # TODO: pf values: x, y, theta
-        pf_values_list = [
-            pf_msg.pose.pose.position.x,
-            pf_msg.pose.pose.position.y,
-            euler_from_quaternion(pf_msg.pose.pose.orientation)
-        ]
-
+        pf_values_list = [pf_x, pf_y, pf_theta]
+        
         stamp = Time.from_msg(odom_msg.header.stamp).nanoseconds
         # Put all the values in a list
         values_to_log = odom_values_list + pf_values_list + [stamp]
