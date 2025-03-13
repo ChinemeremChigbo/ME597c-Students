@@ -177,7 +177,7 @@ class particleFilter(Node):
         particles_weights = particles_weights / np.sum(particles_weights)
         
         # TODO: randomly sampling N particles from the list of particles based on their weights (hint: use np.random.choice)
-        sampled_indices = np.random.choice(self.numParticles, self.numParticles, p=self.weights)
+        sampled_indices = np.random.choice(len(self.particles), self.numParticles, p=particles_weights)
         sampled_particles = [self.particles[i] for i in sampled_indices]
 
         for bp in sampled_particles:
