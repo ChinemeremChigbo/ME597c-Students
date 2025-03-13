@@ -62,7 +62,7 @@ class localization(Node):
         pf_theta = euler_from_quaternion(pf_msg.pose.pose.orientation)
         
         # Update the current pose with the particle filter estimation
-        self.pose = [pf_x, pf_y, pf_theta, Time.from_msg(pf_msg.header.stamp).nanoseconds]
+        self.pose = [pf_x, pf_y, pf_theta, pf_msg.header.stamp]
         
         # Extract odometry values
         odom_x = odom_msg.pose.pose.position.x
