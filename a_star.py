@@ -46,8 +46,13 @@ def return_path(current_node, maze):
 
     return path
 
+def calculate_heuristic(position, end_position, heuristic_type='euclidean'):
+    if heuristic_type == 'manhattan':
+        return abs(position[0] - end_position[0]) + abs(position[1] - end_position[1])
+    else:  # Default to Euclidean
+        return sqrt((position[0] - end_position[0])**2 + (position[1] - end_position[1])**2)
 
-def search(maze, start, end):
+def search(maze, start, end, heuristic_type='euclidean'):
     maze = maze.copy().T
 
     """
@@ -74,7 +79,7 @@ def search(maze, start, end):
     # Use None as parent if not defined
     start_node = Node(None, start)
     start_node.g = 0 # cost from start Node
-    start_node.h = sqrt((start[0] - end[0]) ** 2 + (start[1] - end[1]) ** 2) # heuristic estimated cost to end Node
+    start_node.h = calculate_heuristic(start, end, heuristic_type) # heuristic estimated cost to end Node
     start_node.f = start_node.g + start_node.h
 
     end_node = Node(None, end)
@@ -190,17 +195,16 @@ def search(maze, start, end):
                 continue
 
             # TODO PART 4 Create the f, g, and h values
-            child.g = current_node.g + sqrt((child.position[0] - current_node.position[0])**2 +
-                                            (child.position[1] - current_node.position[1])**2)
+            movement_cost = sqrt((child.position[0] - current_node.position[0])**2 +
+                                 (child.position[1] - current_node.position[1])**2)
+            child.g = current_node.g + movement_cost
             # Heuristic costs calculated here, this is using eucledian distance
-            child.h = sqrt((child.position[0] - end_node.position[0])**2 +
-                           (child.position[1] - end_node.position[1])**2)
+            child.h = calculate_heuristic(child.position, end_node.position, heuristic_type)
             child.f = child.g + child.h
 
             # Child is already in the yet_to_visit list and g cost is already lower
-            child_node_in_yet_to_visit = yet_to_visit_dict.get(
-                child.position, False)
-            if (child_node_in_yet_to_visit is not False) and (child.g >= child_node_in_yet_to_visit.g):
+            existing_node = yet_to_visit_dict.get(child.position, False)
+            if existing_node is not False and child.g >= existing_node.g:
                 continue
 
             # Add the child to the yet_to_visit list
