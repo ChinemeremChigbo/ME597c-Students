@@ -74,7 +74,7 @@ class planner:
         plt.plot(endPoseCart[0], endPoseCart[1], 'r*', markersize=10)
         plt.text(startPoseCart[0], startPoseCart[1], 'start', fontsize=16)
         plt.text(endPoseCart[0], endPoseCart[1], 'goal', fontsize=16)
-        plt.show()
+        # plt.show()
 
         return pathCart_list
         
