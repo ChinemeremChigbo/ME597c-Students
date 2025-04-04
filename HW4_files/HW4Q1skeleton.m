@@ -91,21 +91,38 @@ brbel = zeros(Nsteps,Nstates);
 for k = 1:Nsteps
     % prediction step, i.e. computing bar_belief using the motion model
     for i = 1:Nstates
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Complete this section for prediction steps
-        % using if/else statements for U(k)
-        % 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Initialize predicted belief
+        brbel(k,i) = 0;
+        if U(k) == 1  % Move right
+            if i > 1
+                brbel(k,i) = brbel(k,i) + pRR * bel(k,i-1); % came from left
+            end
+            brbel(k,i) = brbel(k,i) + pRS * bel(k,i);       % stayed
+        elseif U(k) == -1  % Move left
+            if i < Nstates
+                brbel(k,i) = brbel(k,i) + pLL * bel(k,i+1); % came from right
+            end
+            brbel(k,i) = brbel(k,i) + pLS * bel(k,i);       % stayed
+        elseif U(k) == 0  % Stay
+            brbel(k,i) = bel(k,i); % deterministic stay
+        end
     end
+
     % correction step, i.e. computing belief using the sensor output
     for i = 1:Nstates
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Complete this section for correction steps
-        % using if-else statemtns for Z(k)
-        % 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        if ismember(i, W)
+            if Z(k) == 1
+                bel(k+1,i) = pCP * brbel(k,i);  % correct positive
+            else
+                bel(k+1,i) = pFN * brbel(k,i);  % false negative
+            end
+        else
+            if Z(k) == 1
+                bel(k+1,i) = pFP * brbel(k,i);  % false positive
+            else
+                bel(k+1,i) = pCN * brbel(k,i);  % correct negative
+            end
+        end
         inv_eta = inv_eta + bel(k+1,i);
     end
     % normalize belief using inverse of eta
@@ -116,6 +133,10 @@ end
 
 figure;
 for i = 1:Nsteps+1
-    subplot(Nsteps+1,1,i);plot(bel(i,:)');
+    subplot(Nsteps+1,1,i);plot(bel(i,:));
 end
 
+[~, most_likely_k6] = max(bel(7,:));
+[~, most_likely_k7] = max(bel(8,:));
+fprintf('Most likely position at k=6 is %d\n', most_likely_k6);
+fprintf('Most likely position at k=7 is %d\n', most_likely_k7);
