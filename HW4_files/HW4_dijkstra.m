@@ -56,8 +56,20 @@ while ~isequal(prior_node, goal)
     closed(x,y) = 1;
 
     % Update costs and prior nodes for the neighbors
-    neighbors = {};
-    %%%%%%% Complete code here (c) %%%%%%%%%
+    neighbors = get_neighbors(prior_node, size(omap));
+    for i = 1:length(neighbors)
+        neighbor = neighbors{i};
+        if closed(neighbor(1), neighbor(2)) == 1
+            continue
+        end
+
+        cost = costs(prior_node(1), prior_node(2)) + get_edge_cost(prior_node, neighbor, omap);
+
+        if cost < costs(neighbor(1), neighbor(2))
+            costs(neighbor(1), neighbor(2)) = cost;
+            priors{neighbor(1), neighbor(2)} = [prior_node, cost];
+        end
+    end
     
     % Visualize the cells that have already been expanded
     plot_expanded(prior_node, start, goal)
@@ -91,7 +103,26 @@ plot_costs(costs)
 %   neighbors: list of up to eight neighbor coordinate as cell array {(x1, y1), (x2, y2), ...}
 function neighbors = get_neighbors(current_cell, omap_size)
     neighbors = {};
-    %%%%%%% Complete code here (a) %%%%%%%%%
+    x = current_cell(1);
+    y = current_cell(2);
+
+    % 8-connected neighborhood
+    directions = [ -1, -1;
+                   -1,  0;
+                   -1,  1;
+                    0, -1;
+                    0,  1;
+                    1, -1;
+                    1,  0;
+                    1,  1 ];
+
+    for i = 1:size(directions, 1)
+        nx = x + directions(i, 1);
+        ny = y + directions(i, 2);
+        if nx >= 1 && ny >= 1 && nx <= omap_size(1) && ny <= omap_size(2)
+            neighbors{end+1} = [nx, ny];
+        end
+    end
 end
 
 %   Calculate the cost to move from prior_node to current_node.
@@ -101,8 +132,22 @@ end
 % 
 %   Output:
 %   edge_cost: calculated cost
-function edge_cost = get_edge_cost(prior_node, current_node, omap)  
-    %%%%%%% Complete code here (b) %%%%%%%%%
+function edge_cost = get_edge_cost(prior_node, current_node, omap)
+    dx = abs(current_node(1) - prior_node(1));
+    dy = abs(current_node(2) - prior_node(2));
+    
+    % Diagonal vs straight movement
+    if dx == 1 && dy == 1
+        move_cost = sqrt(2);
+    else
+        move_cost = 1;
+    end
+    
+    % Get occupancy likelihood at current node
+    occupancy_penalty = omap(current_node(1), current_node(2));
+
+    % Prioritize lower occupancy probability (safer path)
+    edge_cost = move_cost + 100 * occupancy_penalty;
 end
 
 %%%%%% Plotting functions %%%%%%

@@ -95,16 +95,16 @@ for k = 1:Nsteps
         brbel(k,i) = 0;
         if U(k) == 1  % Move right
             if i > 1
-                brbel(k,i) = brbel(k,i) + pRR * bel(k,i-1); % came from left
+                brbel(k,i) = brbel(k,i) + pRR * bel(k,i-1);
             end
-            brbel(k,i) = brbel(k,i) + pRS * bel(k,i);       % stayed
+            brbel(k,i) = brbel(k,i) + pRS * bel(k,i);
         elseif U(k) == -1  % Move left
             if i < Nstates
-                brbel(k,i) = brbel(k,i) + pLL * bel(k,i+1); % came from right
+                brbel(k,i) = brbel(k,i) + pLL * bel(k,i+1);
             end
-            brbel(k,i) = brbel(k,i) + pLS * bel(k,i);       % stayed
+            brbel(k,i) = brbel(k,i) + pLS * bel(k,i);
         elseif U(k) == 0  % Stay
-            brbel(k,i) = bel(k,i); % deterministic stay
+            brbel(k,i) = bel(k,i);
         end
     end
 
